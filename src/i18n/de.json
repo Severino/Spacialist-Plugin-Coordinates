@@ -1,0 +1,18 @@
+{
+    "attribute_name": "Koordinatengeometrie",
+    "empty": "Wird aus Rechtswert, Hochwert und SRID berechnet",
+    "readonly_hint": "Wird automatisch berechnet, bearbeite stattdessen Rechtswert, Hochwert oder SRID",
+    "settings": {
+        "title": "Koordinaten zu Geometrie",
+        "description": "Wähle, aus welchen Attributen ein Koordinatengeometrie-Attribut berechnet wird. Beim Speichern werden alle Werte neu berechnet.",
+        "geometry": "Koordinatengeometrie-Attribut",
+        "easting": "Rechtswert",
+        "northing": "Hochwert",
+        "srid": "SRID",
+        "none": "Es ist noch kein Koordinatengeometrie-Attribut eingerichtet.",
+        "save": "Speichern",
+        "saved": "Gespeichert und neu berechnet.",
+        "recompute": "Alle Werte neu berechnen",
+        "recomputed": "{count} Entitäten neu berechnet."
+    }
+}

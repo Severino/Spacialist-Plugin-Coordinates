@@ -1,0 +1,18 @@
+{
+    "attribute_name": "Coordinate geometry",
+    "empty": "Calculated from easting, northing and SRID",
+    "readonly_hint": "Calculated automatically, edit easting, northing or SRID instead",
+    "settings": {
+        "title": "Coordinates to Geometry",
+        "description": "Choose which attributes a coordinate geometry attribute is calculated from. Saving recalculates all its values.",
+        "geometry": "Coordinate geometry attribute",
+        "easting": "Easting",
+        "northing": "Northing",
+        "srid": "SRID",
+        "none": "No coordinate geometry attribute is configured yet.",
+        "save": "Save",
+        "saved": "Saved and recalculated.",
+        "recompute": "Recalculate all values",
+        "recomputed": "Recalculated {count} entities."
+    }
+}
