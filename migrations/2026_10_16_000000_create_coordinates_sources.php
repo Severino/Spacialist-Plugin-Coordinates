@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 // require_once, which returns no object when the file was already included.
 class CreateCoordinatesSources {
     public function migrate() {
-        Schema::create('coordinates_sources', function (Blueprint $table) {
+        Schema::create('plugin_coordinates_sources', function (Blueprint $table) {
             $table->id();
             $table->integer('geometry_attribute_id')->unsigned()->unique();
             $table->integer('easting_attribute_id')->unsigned();
@@ -25,6 +25,6 @@ class CreateCoordinatesSources {
     }
 
     public function rollback() {
-        Schema::dropIfExists('coordinates_sources');
+        Schema::dropIfExists('plugin_coordinates_sources');
     }
 }

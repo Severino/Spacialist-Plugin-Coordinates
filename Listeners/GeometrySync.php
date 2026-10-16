@@ -23,6 +23,7 @@ class GeometrySync
     }
 
     public function onSaved(object $event): void {
+
         $value = $event->attributeValue ?? null;
         if(!$value instanceof AttributeValue || !$this->isRelevant($value)) {
             return;

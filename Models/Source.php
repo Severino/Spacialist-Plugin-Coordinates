@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Source extends Model
 {
-    protected $table = 'coordinates_sources';
+    protected $table = 'plugin_coordinates_sources';
 
     protected $fillable = [
         'geometry_attribute_id',
