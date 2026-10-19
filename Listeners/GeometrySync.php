@@ -2,16 +2,12 @@
 
 namespace App\Plugins\Coordinates\Listeners;
 
-use App\Attribute;
 use App\AttributeValue;
-use App\Entity;
-use App\Plugins\Coordinates\Attributes\GeometryAttribute;
 use App\Plugins\Coordinates\Models\Source;
 use App\Plugins\Coordinates\Services\GeometryCalculator;
-use Illuminate\Support\Facades\Log;
 
 /**
- * Keeps coordinate geometry values in sync with their easting, northing and SRID values.
+ * Keeps WKT values in sync with their easting, northing and SRID values.
  *
  * Registered in plugin.xml under <listeners>. Expected event payloads:
  *  - attribute_value.saved / attribute_value.deleted: $attributeValue (AttributeValue), $user (?User)
@@ -23,9 +19,8 @@ class GeometrySync
     }
 
     public function onSaved(object $event): void {
-
         $value = $event->attributeValue ?? null;
-        if(!$value instanceof AttributeValue || !$this->isRelevant($value)) {
+        if(!$value instanceof AttributeValue || $this->isPending($value)) {
             return;
         }
 
@@ -38,7 +33,7 @@ class GeometrySync
 
     public function onDeleted(object $event): void {
         $value = $event->attributeValue ?? null;
-        if(!$value instanceof AttributeValue || !$this->isRelevant($value)) {
+        if(!$value instanceof AttributeValue || $this->isPending($value)) {
             return;
         }
 
@@ -52,8 +47,9 @@ class GeometrySync
     }
 
     /**
-     * A source attribute was removed from an entity type, so its values were
-     * deleted in bulk without model events. Recalculate the affected entities.
+     * An attribute of a mapping was removed from its entity type, so the
+     * mapping can't work anymore. It is removed and the WKT attribute
+     * becomes editable again; existing values are kept.
      */
     public function onAttributeRemoved(object $event): void {
         $attributeId = $event->attributeId ?? null;
@@ -62,36 +58,19 @@ class GeometrySync
             return;
         }
 
-        $sources = Source::usingSource($attributeId);
-        if($sources->isEmpty()) {
-            return;
+        $sources = Source::where('entity_type_id', $entityTypeId)->get()
+            ->filter(fn($source) => in_array($attributeId, $source->attributeIds()));
+        foreach($sources as $source) {
+            $source->setTargetReadonly(false);
+            $source->delete();
         }
-
-        Entity::where('entity_type_id', $entityTypeId)
-            ->select('id')
-            ->chunkById(500, function($entities) use ($sources) {
-                foreach($entities as $entity) {
-                    foreach($sources as $source) {
-                        $this->calculator->recompute($entity->id, $source);
-                    }
-                }
-            });
     }
 
     /**
      * Pending moderation rows are skipped: the value is recalculated when a
-     * moderator accepts them. Computed values themselves are skipped to avoid loops.
+     * moderator accepts them.
      */
-    private function isRelevant(AttributeValue $value): bool {
-        if($value->{$value->getModerationStateColumn()} !== null) {
-            return false;
-        }
-
-        $datatype = Attribute::whereKey($value->attribute_id)->value('datatype');
-        if($datatype === GeometryAttribute::getType()) {
-            return false;
-        }
-
-        return true;
+    private function isPending(AttributeValue $value): bool {
+        return $value->{$value->getModerationStateColumn()} !== null;
     }
 }

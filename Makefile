@@ -9,8 +9,8 @@ plugin_dir=$(build_src)/$(package_root)
 
 # Everything that goes into the package. Keep these lists up to date:
 # add every folder or file you create that the plugin needs at runtime.
-backend_dirs=Attributes Controllers Listeners Models Services migrations routes
-package_files=plugin.xml
+backend_dirs=Controllers Listeners Models Services migrations routes
+package_files=plugin.xml permissions.json
 
 # all steps for an appstore release
 release: npm_init npm_build package

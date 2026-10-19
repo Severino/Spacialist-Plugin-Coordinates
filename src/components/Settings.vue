@@ -1,148 +1,204 @@
 <template>
     <div class="coordinates-settings container-fluid py-3">
         <h4>{{ t('plugin.coordinates.settings.title') }}</h4>
-        <p class="text-muted">
-            {{ t('plugin.coordinates.settings.description') }}
-        </p>
 
         <div
-            v-if="state.error"
-            class="alert alert-danger"
+            v-if="!allowed"
+            class="alert alert-warning"
         >
-            {{ state.error }}
+            {{ t('plugin.coordinates.settings.no_permission') }}
         </div>
+        <template v-else>
+            <p class="text-muted">
+                {{ t('plugin.coordinates.settings.description') }}
+            </p>
 
-        <table class="table table-sm align-middle">
-            <thead>
-                <tr>
-                    <th>{{ t('plugin.coordinates.settings.geometry') }}</th>
-                    <th>{{ t('plugin.coordinates.settings.easting') }}</th>
-                    <th>{{ t('plugin.coordinates.settings.northing') }}</th>
-                    <th>{{ t('plugin.coordinates.settings.srid') }}</th>
-                    <th />
-                </tr>
-            </thead>
-            <tbody>
-                <tr
-                    v-for="source in state.sources"
-                    :key="source.id"
-                >
-                    <td>{{ label(source.geometry_attribute_id) }}</td>
-                    <td>{{ label(source.easting_attribute_id) }}</td>
-                    <td>{{ label(source.northing_attribute_id) }}</td>
-                    <td>{{ label(source.srid_attribute_id) }}</td>
-                    <td class="text-end text-nowrap">
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-secondary me-1"
-                            :disabled="state.busy"
-                            @click="edit(source)"
-                        >
-                            <i class="fas fa-fw fa-edit" />
-                        </button>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-secondary me-1"
-                            :title="t('plugin.coordinates.settings.recompute')"
-                            :disabled="state.busy"
-                            @click="recompute(source)"
-                        >
-                            <i class="fas fa-fw fa-sync" />
-                        </button>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-danger"
-                            :disabled="state.busy"
-                            @click="remove(source)"
-                        >
-                            <i class="fas fa-fw fa-trash" />
-                        </button>
-                    </td>
-                </tr>
-                <tr v-if="state.sources.length == 0">
-                    <td
-                        colspan="5"
-                        class="text-muted"
-                    >
-                        {{ t('plugin.coordinates.settings.none') }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <form
-            class="row g-2 align-items-end"
-            @submit.prevent="save"
-        >
             <div
-                v-for="field in fields"
-                :key="field.key"
-                class="col-md"
+                v-if="state.error"
+                class="alert alert-danger"
             >
-                <label
-                    class="form-label"
-                    :for="`coordinates-${field.key}`"
-                >
-                    {{ t(`plugin.coordinates.settings.${field.label}`) }}
-                </label>
-                <select
-                    :id="`coordinates-${field.key}`"
-                    v-model="state.form[field.key]"
-                    class="form-select"
-                    required
-                >
-                    <option
-                        v-for="attribute in field.options()"
-                        :key="attribute.id"
-                        :value="attribute.id"
-                    >
-                        {{ label(attribute.id) }} ({{ attribute.datatype }})
-                    </option>
-                </select>
+                {{ state.error }}
             </div>
-            <div class="col-md-auto">
-                <button
-                    type="submit"
-                    class="btn btn-primary"
-                    :disabled="state.busy"
-                >
-                    {{ t('plugin.coordinates.settings.save') }}
-                </button>
-            </div>
-        </form>
 
-        <p
-            v-if="state.message"
-            class="mt-3 text-success"
-        >
-            {{ state.message }}
-        </p>
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>{{ t('plugin.coordinates.settings.entity_type') }}</th>
+                        <th>{{ t('plugin.coordinates.settings.wkt') }}</th>
+                        <th>{{ t('plugin.coordinates.settings.easting') }}</th>
+                        <th>{{ t('plugin.coordinates.settings.northing') }}</th>
+                        <th>{{ t('plugin.coordinates.settings.srid') }}</th>
+                        <th />
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr
+                        v-for="source in state.sources"
+                        :key="source.id"
+                        :class="{ 'table-active': state.form.id == source.id }"
+                    >
+                        <td>{{ entityTypeLabel(source.entity_type_id) }}</td>
+                        <td>{{ attributeLabel(source.entity_type_id, source.wkt_attribute_id) }}</td>
+                        <td>{{ attributeLabel(source.entity_type_id, source.easting_attribute_id) }}</td>
+                        <td>{{ attributeLabel(source.entity_type_id, source.northing_attribute_id) }}</td>
+                        <td>{{ attributeLabel(source.entity_type_id, source.srid_attribute_id) }}</td>
+                        <td class="text-end text-nowrap">
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary me-1"
+                                :disabled="state.busy"
+                                @click="edit(source)"
+                            >
+                                <i class="fas fa-fw fa-edit" />
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary me-1"
+                                :title="t('plugin.coordinates.settings.recompute')"
+                                :disabled="state.busy"
+                                @click="recompute(source)"
+                            >
+                                <i class="fas fa-fw fa-sync" />
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                :disabled="state.busy"
+                                @click="remove(source)"
+                            >
+                                <i class="fas fa-fw fa-trash" />
+                            </button>
+                        </td>
+                    </tr>
+                    <tr v-if="state.sources.length == 0">
+                        <td
+                            colspan="6"
+                            class="text-muted"
+                        >
+                            {{ t('plugin.coordinates.settings.none') }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <form
+                class="row g-2 align-items-end"
+                @submit.prevent="save"
+            >
+                <div class="col-md">
+                    <label
+                        class="form-label"
+                        for="coordinates-entity_type_id"
+                    >
+                        {{ t('plugin.coordinates.settings.entity_type') }}
+                    </label>
+                    <select
+                        id="coordinates-entity_type_id"
+                        v-model="state.form.entity_type_id"
+                        class="form-select"
+                        required
+                        @change="resetAttributes"
+                    >
+                        <option
+                            v-for="entityType in entityTypes"
+                            :key="entityType.id"
+                            :value="entityType.id"
+                        >
+                            {{ entityTypeLabel(entityType.id) }}
+                        </option>
+                    </select>
+                </div>
+                <div
+                    v-for="field in fields"
+                    :key="field.key"
+                    class="col-md"
+                >
+                    <label
+                        class="form-label"
+                        :for="`coordinates-${field.key}`"
+                    >
+                        {{ t(`plugin.coordinates.settings.${field.label}`) }}
+                    </label>
+                    <select
+                        :id="`coordinates-${field.key}`"
+                        v-model="state.form[field.key]"
+                        class="form-select"
+                        :disabled="!state.form.entity_type_id"
+                        required
+                    >
+                        <option
+                            v-for="attribute in options(field.datatypes)"
+                            :key="attribute.id"
+                            :value="attribute.id"
+                        >
+                            {{ attributeLabel(state.form.entity_type_id, attribute.id) }} ({{ attribute.datatype }})
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-auto">
+                    <button
+                        v-if="state.form.id"
+                        type="button"
+                        class="btn btn-outline-secondary me-1"
+                        :disabled="state.busy"
+                        @click="cancel"
+                    >
+                        {{ t('plugin.coordinates.settings.cancel') }}
+                    </button>
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        :disabled="state.busy"
+                    >
+                        {{ t('plugin.coordinates.settings.save') }}
+                    </button>
+                </div>
+            </form>
+            <p class="form-text">
+                {{ t('plugin.coordinates.settings.overwrite_hint') }}
+            </p>
+
+            <p
+                v-if="state.message"
+                class="mt-3 text-success"
+            >
+                {{ state.message }}
+            </p>
+        </template>
     </div>
 </template>
 
 <script>
     import {
+        computed,
         onMounted,
         reactive,
     } from 'vue';
 
-    const DATATYPE = 'coordinates-geometry';
     const API = 'coordinates/sources';
+    // Same lists as in SourceController
+    const WKT_DATATYPES = ['geography'];
+    const NUMBER_DATATYPES = ['double', 'integer', 'string'];
+    const SRID_DATATYPES = ['string', 'integer'];
 
     export default {
         setup() {
             const t = (key, args) => window.SpPS?.data?.t ? window.SpPS.data.t(key, args) : key;
             const http = (...args) => window.SpPS.api.http(...args);
+            const entityStore = window.SpPS.api.store.entityStore;
+
+            const allowed = computed(_ => window.SpPS.api.helpers.can('coordinates_write'));
 
             const emptyForm = _ => ({
-                geometry_attribute_id: null,
+                id: null,
+                entity_type_id: null,
+                wkt_attribute_id: null,
                 easting_attribute_id: null,
                 northing_attribute_id: null,
                 srid_attribute_id: null,
             });
 
             const state = reactive({
-                attributes: [],
                 sources: [],
                 form: emptyForm(),
                 busy: false,
@@ -150,22 +206,27 @@
                 message: null,
             });
 
-            const computedAttributes = _ => state.attributes.filter(a => a.datatype == DATATYPE);
-            const sourceAttributes = _ => state.attributes.filter(a => a.datatype != DATATYPE);
             const fields = [
-                { key: 'geometry_attribute_id', label: 'geometry', options: computedAttributes },
-                { key: 'easting_attribute_id', label: 'easting', options: sourceAttributes },
-                { key: 'northing_attribute_id', label: 'northing', options: sourceAttributes },
-                { key: 'srid_attribute_id', label: 'srid', options: sourceAttributes },
+                { key: 'wkt_attribute_id', label: 'wkt', datatypes: WKT_DATATYPES },
+                { key: 'easting_attribute_id', label: 'easting', datatypes: NUMBER_DATATYPES },
+                { key: 'northing_attribute_id', label: 'northing', datatypes: NUMBER_DATATYPES },
+                { key: 'srid_attribute_id', label: 'srid', datatypes: SRID_DATATYPES },
             ];
 
-            const label = id => {
-                const attribute = state.attributes.find(a => a.id == id);
+            const entityTypes = computed(_ => Object.values(entityStore.entityTypes));
+            const options = datatypes => {
+                return entityStore.getEntityTypeAttributes(state.form.entity_type_id)
+                    .filter(a => datatypes.includes(a.datatype));
+            };
+
+            const entityTypeLabel = id => entityStore.getEntityTypeName(id) || `#${id}`;
+            const attributeLabel = (entityTypeId, id) => {
+                const attribute = entityStore.getEntityTypeAttributes(entityTypeId).find(a => a.id == id);
                 if(!attribute) return `#${id}`;
                 return window.SpPS.api.helpers.translateConcept(attribute.thesaurus_url);
             };
 
-            const run = async (fn) => {
+            const run = async fn => {
                 state.busy = true;
                 state.error = null;
                 state.message = null;
@@ -179,16 +240,16 @@
             };
 
             const load = _ => run(async _ => {
-                const [attributes, sources] = await Promise.all([
-                    http('get', 'editor/dm/attribute'),
-                    http('get', API),
-                ]);
-                state.attributes = attributes.attributes;
-                state.sources = sources;
+                state.sources = await http('get', API);
             });
 
+            const resetAttributes = _ => {
+                fields.forEach(field => state.form[field.key] = null);
+            };
+
             const save = _ => run(async _ => {
-                const source = await http('post', API, state.form);
+                const { id, ...data } = state.form;
+                const source = id ? await http('put', `${API}/${id}`, data) : await http('post', API, data);
                 const idx = state.sources.findIndex(s => s.id == source.id);
                 if(idx > -1) {
                     state.sources.splice(idx, 1, source);
@@ -201,11 +262,17 @@
 
             const edit = source => {
                 state.form = {
-                    geometry_attribute_id: source.geometry_attribute_id,
+                    id: source.id,
+                    entity_type_id: source.entity_type_id,
+                    wkt_attribute_id: source.wkt_attribute_id,
                     easting_attribute_id: source.easting_attribute_id,
                     northing_attribute_id: source.northing_attribute_id,
                     srid_attribute_id: source.srid_attribute_id,
                 };
+            };
+
+            const cancel = _ => {
+                state.form = emptyForm();
             };
 
             const recompute = source => run(async _ => {
@@ -216,17 +283,28 @@
             const remove = source => run(async _ => {
                 await http('delete', `${API}/${source.id}`);
                 state.sources = state.sources.filter(s => s.id != source.id);
+                if(state.form.id == source.id) {
+                    state.form = emptyForm();
+                }
             });
 
-            onMounted(load);
+            onMounted(_ => {
+                if(allowed.value) load();
+            });
 
             return {
                 t,
+                allowed,
                 state,
                 fields,
-                label,
+                entityTypes,
+                options,
+                entityTypeLabel,
+                attributeLabel,
+                resetAttributes,
                 save,
                 edit,
+                cancel,
                 recompute,
                 remove,
             };

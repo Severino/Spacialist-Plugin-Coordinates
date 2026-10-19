@@ -1,16 +1,17 @@
 {
-    "attribute_name": "Coordinate geometry",
-    "empty": "Calculated from easting, northing and SRID",
-    "readonly_hint": "Calculated automatically, edit easting, northing or SRID instead",
     "settings": {
         "title": "Coordinates to Geometry",
-        "description": "Choose which attributes a coordinate geometry attribute is calculated from. Saving recalculates all its values.",
-        "geometry": "Coordinate geometry attribute",
+        "description": "Choose an entity type and which of its attributes a WKT attribute is calculated from. The WKT attribute becomes read-only for this entity type.",
+        "overwrite_hint": "Saving recalculates the WKT values of all entities of this type and replaces existing values. Entities with missing or invalid coordinates lose their WKT value.",
+        "no_permission": "You do not have the permission to change the coordinate settings.",
+        "entity_type": "Entity type",
+        "wkt": "WKT attribute",
         "easting": "Easting",
         "northing": "Northing",
         "srid": "SRID",
-        "none": "No coordinate geometry attribute is configured yet.",
+        "none": "No WKT attribute is calculated yet.",
         "save": "Save",
+        "cancel": "Cancel",
         "saved": "Saved and recalculated.",
         "recompute": "Recalculate all values",
         "recomputed": "Recalculated {count} entities."

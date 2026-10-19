@@ -1,4 +1,5 @@
-import GeometryAttribute from './components/GeometryAttribute.vue';
+import { watch } from 'vue';
+
 import Settings from './components/Settings.vue';
 
 import * as en from './i18n/en.json';
@@ -30,10 +31,23 @@ SpPS.intoSlot({
     href: 'settings',
 });
 
-SpPS.registerComponent({
-    of,
-    type: 'attribute',
-    key: id,
-    datatype: 'coordinates-geometry',
-    component: GeometryAttribute,
-});
+// The core only updates the values the user edited, but the backend
+// recalculates the WKT values on every save. Every save changes updated_at,
+// so reload them whenever that happens on the selected entity.
+// Can be removed once the core returns the saved values in the PATCH response.
+const entityStore = SpPS.api.store.entityStore;
+const reloadValues = async entityId => {
+    const values = await SpPS.api.http('get', `${id}/entity/${entityId}/values`);
+    const entity = entityStore.selectedEntity;
+    if(entity?.id != entityId || !entity.data) return;
+    for(const [attributeId, value] of Object.entries(values ?? {})) {
+        entity.data[attributeId] = value ?? {};
+    }
+};
+watch(
+    _ => [entityStore.selectedEntity?.id, entityStore.selectedEntity?.updated_at],
+    ([entityId, updatedAt], [oldEntityId, oldUpdatedAt] = []) => {
+        if(!entityId || entityId != oldEntityId || updatedAt == oldUpdatedAt) return;
+        reloadValues(entityId).catch(e => console.error('Coordinates: could not reload WKT values', e));
+    }
+);

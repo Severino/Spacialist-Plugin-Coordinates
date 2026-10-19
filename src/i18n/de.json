@@ -1,16 +1,17 @@
 {
-    "attribute_name": "Koordinatengeometrie",
-    "empty": "Wird aus Rechtswert, Hochwert und SRID berechnet",
-    "readonly_hint": "Wird automatisch berechnet, bearbeite stattdessen Rechtswert, Hochwert oder SRID",
     "settings": {
         "title": "Koordinaten zu Geometrie",
-        "description": "Wähle, aus welchen Attributen ein Koordinatengeometrie-Attribut berechnet wird. Beim Speichern werden alle Werte neu berechnet.",
-        "geometry": "Koordinatengeometrie-Attribut",
+        "description": "Wähle einen Entitätstyp und aus welchen seiner Attribute ein WKT-Attribut berechnet wird. Das WKT-Attribut ist für diesen Entitätstyp dann schreibgeschützt.",
+        "overwrite_hint": "Beim Speichern werden die WKT-Werte aller Entitäten dieses Typs neu berechnet und vorhandene Werte ersetzt. Entitäten mit fehlenden oder ungültigen Koordinaten verlieren ihren WKT-Wert.",
+        "no_permission": "Du hast keine Berechtigung, die Koordinaten-Einstellungen zu ändern.",
+        "entity_type": "Entitätstyp",
+        "wkt": "WKT-Attribut",
         "easting": "Rechtswert",
         "northing": "Hochwert",
         "srid": "SRID",
-        "none": "Es ist noch kein Koordinatengeometrie-Attribut eingerichtet.",
+        "none": "Es wird noch kein WKT-Attribut berechnet.",
         "save": "Speichern",
+        "cancel": "Abbrechen",
         "saved": "Gespeichert und neu berechnet.",
         "recompute": "Alle Werte neu berechnen",
         "recomputed": "{count} Entitäten neu berechnet."

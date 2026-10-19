@@ -2,25 +2,28 @@
 
 namespace App\Plugins\Coordinates\Models;
 
-use App\Attribute;
+use App\EntityAttribute;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Maps one coordinate geometry attribute to the three attributes it is calculated from.
+ * Maps the WKT attribute of an entity type to the easting, northing and SRID
+ * attributes of the same entity type it is calculated from.
  */
 class Source extends Model
 {
     protected $table = 'plugin_coordinates_sources';
 
     protected $fillable = [
-        'geometry_attribute_id',
+        'entity_type_id',
+        'wkt_attribute_id',
         'easting_attribute_id',
         'northing_attribute_id',
         'srid_attribute_id',
     ];
 
     protected $casts = [
-        'geometry_attribute_id' => 'integer',
+        'entity_type_id' => 'integer',
+        'wkt_attribute_id' => 'integer',
         'easting_attribute_id' => 'integer',
         'northing_attribute_id' => 'integer',
         'srid_attribute_id' => 'integer',
@@ -34,17 +37,42 @@ class Source extends Model
         ];
     }
 
-    public function geometryAttribute() {
-        return $this->belongsTo(Attribute::class, 'geometry_attribute_id');
+    public function attributeIds(): array {
+        return [$this->wkt_attribute_id, ...$this->sourceAttributeIds()];
     }
 
     /**
-     * All mappings that use the given attribute as easting, northing or SRID.
+     * All mappings of the entity type that use the given attribute as easting, northing or SRID.
      */
-    public static function usingSource(int $attributeId) {
-        return static::where('easting_attribute_id', $attributeId)
-            ->orWhere('northing_attribute_id', $attributeId)
-            ->orWhere('srid_attribute_id', $attributeId)
+    public static function usingSource(int $entityTypeId, int $attributeId) {
+        return static::where('entity_type_id', $entityTypeId)
+            ->where(function($query) use ($attributeId) {
+                $query->where('easting_attribute_id', $attributeId)
+                    ->orWhere('northing_attribute_id', $attributeId)
+                    ->orWhere('srid_attribute_id', $attributeId);
+            })
             ->get();
+    }
+
+    /**
+     * Sets or removes the readonly flag on the WKT attribute of the entity type,
+     * so users can't edit a value that is calculated.
+     */
+    public function setTargetReadonly(bool $readonly): void {
+        $entityAttribute = EntityAttribute::where('entity_type_id', $this->entity_type_id)
+            ->where('attribute_id', $this->wkt_attribute_id)
+            ->first();
+        if(!isset($entityAttribute)) {
+            return;
+        }
+
+        $metadata = $entityAttribute->metadata ?? new \stdClass();
+        if($readonly) {
+            $metadata->readonly = true;
+        } else {
+            unset($metadata->readonly);
+        }
+        $entityAttribute->metadata = $metadata;
+        $entityAttribute->save();
     }
 }

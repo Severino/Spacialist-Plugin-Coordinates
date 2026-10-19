@@ -1,0 +1,9 @@
+{
+    "coordinates": [
+        {
+            "name": "write",
+            "display_name": "Manage coordinate mappings",
+            "description": "View and change which attributes WKT values are calculated from"
+        }
+    ]
+}

@@ -5,38 +5,39 @@ namespace App\Plugins\Coordinates\Services;
 use App\AttributeTypes\GeographyAttribute;
 use App\AttributeValue;
 use App\Entity;
-use App\EntityAttribute;
 use App\Plugins\Coordinates\Models\Source;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Calculates the coordinate geometry value of an entity from its easting,
- * northing and SRID values and stores it as an EPSG:4326 geography.
+ * Calculates the WKT value of an entity from its easting, northing and SRID
+ * values and stores it as an EPSG:4326 geography.
  */
 class GeometryCalculator
 {
     /**
-     * Recalculates every coordinate geometry attribute of the entity that uses
-     * the given attribute as easting, northing or SRID.
+     * Recalculates every WKT attribute of the entity that uses the given
+     * attribute as easting, northing or SRID.
      */
     public function recomputeForSourceAttribute(int $entityId, int $attributeId, ?int $userId = null, ?int $excludeValueId = null): void {
-        foreach(Source::usingSource($attributeId) as $source) {
+        $entityTypeId = Entity::whereKey($entityId)->value('entity_type_id');
+        if($entityTypeId === null) {
+            return;
+        }
+
+        foreach(Source::usingSource($entityTypeId, $attributeId) as $source) {
             $this->recompute($entityId, $source, $userId, $excludeValueId);
         }
     }
 
     /**
-     * Recalculates the coordinate geometry value of all entities whose entity type has the WKT attribute.
+     * Recalculates the WKT value of all entities of the mapping's entity type.
      *
      * @return int number of entities that were processed
      */
     public function recomputeAll(Source $source, ?int $userId = null): int {
-        $entityTypeIds = EntityAttribute::where('attribute_id', $source->geometry_attribute_id)
-            ->pluck('entity_type_id');
-
         $count = 0;
-        Entity::whereIn('entity_type_id', $entityTypeIds)
+        Entity::where('entity_type_id', $source->entity_type_id)
             ->select('id')
             ->chunkById(500, function($entities) use ($source, $userId, &$count) {
                 foreach($entities as $entity) {
@@ -49,9 +50,9 @@ class GeometryCalculator
     }
 
     /**
-     * Recalculates one coordinate geometry value.
+     * Recalculates one WKT value.
      *
-     * When a source value is missing or invalid the computed value is removed,
+     * When a source value is missing or invalid the WKT value is removed,
      * so it never shows a position that does not match the source values.
      *
      * @param int|null $excludeValueId - a source value that is being deleted
@@ -59,7 +60,7 @@ class GeometryCalculator
      */
     public function recompute(int $entityId, Source $source, ?int $userId = null, ?int $excludeValueId = null): ?AttributeValue {
         $entity = Entity::find($entityId);
-        if(!isset($entity) || !$this->entityHasAttribute($entity, $source->geometry_attribute_id)) {
+        if(!isset($entity) || $entity->entity_type_id !== $source->entity_type_id) {
             return null;
         }
 
@@ -73,7 +74,8 @@ class GeometryCalculator
 
         $easting = self::toNumber($values->get($source->easting_attribute_id));
         $northing = self::toNumber($values->get($source->northing_attribute_id));
-        $srid = self::parseSrid($values->get($source->srid_attribute_id)?->str_val);
+        $sridValue = $values->get($source->srid_attribute_id);
+        $srid = self::parseSrid($sridValue?->str_val ?? $sridValue?->int_val);
 
         $wkt = null;
         if($easting !== null && $northing !== null && $srid !== null) {
@@ -81,7 +83,7 @@ class GeometryCalculator
         }
 
         $current = AttributeValue::where('entity_id', $entityId)
-            ->where('attribute_id', $source->geometry_attribute_id)
+            ->where('attribute_id', $source->wkt_attribute_id)
             ->first();
 
         if($wkt === null) {
@@ -91,7 +93,7 @@ class GeometryCalculator
 
         $value = $current ?? new AttributeValue([
             'entity_id' => $entityId,
-            'attribute_id' => $source->geometry_attribute_id,
+            'attribute_id' => $source->wkt_attribute_id,
         ]);
         $geometry = GeographyAttribute::unserialize($wkt);
         if(!$value->exists || GeographyAttribute::serialize($value->geography_val) !== GeographyAttribute::serialize($geometry)) {
@@ -125,11 +127,11 @@ class GeometryCalculator
     /**
      * Accepts "25832", "EPSG:25832", "epsg 25832" or "urn:ogc:def:crs:EPSG::25832".
      */
-    public static function parseSrid(?string $value): ?int {
+    public static function parseSrid(string|int|null $value): ?int {
         if($value === null) {
             return null;
         }
-        if(preg_match('/^\s*(?:(?:urn:ogc:def:crs:)?epsg\s*:{0,2}\s*)?(\d{4,6})\s*$/i', $value, $matches) !== 1) {
+        if(preg_match('/^\s*(?:(?:urn:ogc:def:crs:)?epsg\s*:{0,2}\s*)?(\d{4,6})\s*$/i', (string) $value, $matches) !== 1) {
             return null;
         }
         return intval($matches[1]);
@@ -154,11 +156,5 @@ class GeometryCalculator
             return is_numeric($normalized) ? floatval($normalized) : null;
         }
         return null;
-    }
-
-    private function entityHasAttribute(Entity $entity, int $attributeId): bool {
-        return EntityAttribute::where('entity_type_id', $entity->entity_type_id)
-            ->where('attribute_id', $attributeId)
-            ->exists();
     }
 }

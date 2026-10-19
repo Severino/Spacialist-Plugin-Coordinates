@@ -3,7 +3,7 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Severino/Spacialist/refs/heads/0.12-feat-plugin-xml-schema/schemas/plugin-xml/v1/schema.xsd">
     <name>Coordinates</name>
     <title>Coordinates to Geometry</title>
-    <description>Read-only geometry attribute calculated from easting, northing and SRID attributes.</description>
+    <description>Calculates a WKT attribute from easting, northing and SRID attributes of the same entity type.</description>
     <version>1.0.0</version>
     <licence>MIT</licence>
     <authors>
@@ -11,9 +11,7 @@
     </authors>
     <routes src="routes/api.php" middleware="api"/>
     <migrations src="migrations"/>
-    <attributes>
-        <attribute src="Attributes/GeometryAttribute"/>
-    </attributes>
+    <permissions src="permissions.json"/>
     <listeners>
         <listener on="attribute_value.saved" src="Listeners/GeometrySync@onSaved"/>
         <listener on="attribute_value.deleted" src="Listeners/GeometrySync@onDeleted"/>
